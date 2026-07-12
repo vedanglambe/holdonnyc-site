@@ -37,6 +37,28 @@
     #bg-video {
       opacity: 0.7;
     }
+    #speech-bubble {
+      position: absolute; top: -10px; left: 50%;
+      transform: translateX(-50%) translateY(0);
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 0.15s steps(3), transform 0.15s steps(3);
+      pointer-events: none;
+      width: 160px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #speech-bubble img {
+      width: 100%; height: auto;
+      image-rendering: pixelated;
+    }
+    #speech-bubble span {
+      position: absolute;
+      color: #111;
+      font-family: 'Courier New', monospace;
+      font-size: 13px; font-weight: bold;
+      letter-spacing: 1px;
+      padding-bottom: 10px;
+    }
     #bg-video-hover, #bg-video-hover-rev {
       opacity: 0;
     }
@@ -92,16 +114,51 @@
       50% { rotate: 3deg; } 75% { rotate: -2deg; }
     }
 
-    .toolbar-controls {
-      display: flex; align-items: center; gap: 8px;
-      align-self: center; margin-left: 12px; transform: translateY(-20px);
+    .toolbar-end {
+      display: flex; align-items: center; gap: 10px;
+      transform: translateY(-10px);
+      margin-left: 10px;
     }
-    #brush-size { width: 80px; accent-color: #333; }
-    .toolbar-btn {
-      background: rgba(0,0,0,0.7); border: none; color: #fff;
-      font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    #brush-size {
+      width: 80px;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 2px;
+      outline: none;
     }
-    .toolbar-btn:hover { background: rgba(0,0,0,0.9); }
+    #brush-size::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      transform: scale(var(--thumb-scale, 1));
+    }
+    #brush-size::-moz-range-thumb {
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      transform: scale(var(--thumb-scale, 1));
+    }
+    .clear-btn {
+      position: relative; width: 30px; height: 30px;
+      cursor: pointer;
+    }
+    .clear-btn .clear-static,
+    .clear-btn .clear-video {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+    }
+    .clear-btn .clear-video { opacity: 0; }
+    .clear-btn:hover .clear-static { opacity: 0; }
+    .clear-btn:hover .clear-video { opacity: 1; }
 
     #paint-hint {
       position: fixed; top: 20px; left: 50%;
@@ -141,17 +198,6 @@
       color: #fff; font-size: 14px; opacity: 0.6; z-index: 30;
     }
 
-    #zoom-controls {
-      position: fixed; bottom: 20px; left: 20px; z-index: 25;
-      display: flex; flex-direction: column; gap: 4px;
-    }
-    #zoom-controls button {
-      width: 36px; height: 36px; border: 1px solid rgba(255,255,255,0.25);
-      background: rgba(255,255,255,0.12); color: #fff; font-size: 20px;
-      border-radius: 6px; cursor: pointer; display: flex;
-      align-items: center; justify-content: center; line-height: 1;
-    }
-    #zoom-controls button:hover { background: rgba(255,255,255,0.25); }
 
     .rotate-zone {
       position: fixed; top: 0; width: 100px; height: 100%;
@@ -165,6 +211,7 @@
 <body>
 
   <div id="bg-video-wrap">
+    <div id="speech-bubble"><img src="text-bubble.png" alt=""><span>Hello!</span></div>
     <video id="bg-video" src="bg-dance.webm" autoplay muted loop playsinline></video>
     <video id="bg-video-hover" src="bg-dance-hover.webm" muted playsinline preload="auto"></video>
     <video id="bg-video-hover-rev" src="bg-dance-hover-reverse.webm" muted playsinline preload="auto"></video>
@@ -183,10 +230,6 @@
     <img src="back-to-game.png" alt="Back to Game">
     <video src="back-to-game.webm" muted loop playsinline preload="auto"></video>
   </div>
-  <div id="zoom-controls">
-    <button id="zoom-in">+</button>
-    <button id="zoom-out">−</button>
-  </div>
 
   <div id="spray-toolbar">
     <div class="tool-btn" id="pan-btn" title="Pan"><img src="pan-hand.png" alt="Pan"></div>
@@ -200,9 +243,12 @@
     <div class="spray-can" data-color="#8B4513"><img src="spray cans/brown paint can hony.png" alt="Brown"></div>
     <div class="spray-can" data-color="#FFFFFF"><img src="spray cans/white paint can hony.png" alt="White"></div>
     <div class="spray-can" data-color="#111111"><img src="spray cans/black paint can hony.png" alt="Black"></div>
-    <div class="toolbar-controls">
-      <input type="range" id="brush-size" min="2" max="15" value="6">
-      <button class="toolbar-btn" id="btn-clear">Clear</button>
+    <div class="toolbar-end">
+      <input type="range" id="brush-size" min="0.4" max="3" value="1" step="0.1">
+      <div id="btn-clear" class="clear-btn">
+        <img src="x-clear.png" alt="Clear" class="clear-static">
+        <video src="x-clear-hover.webm" muted playsinline preload="auto" class="clear-video"></video>
+      </div>
     </div>
   </div>
 
@@ -664,11 +710,14 @@
     let bgHovered = false;
     let hoverVideoEnded = false;
     const bgHoverRev = document.getElementById('bg-video-hover-rev');
+    const speechBubble = document.getElementById('speech-bubble');
 
     function enterBgHover() {
       if (bgHovered) return;
       bgHovered = true;
       hoverVideoEnded = false;
+      speechBubble.style.opacity = '1';
+      speechBubble.style.transform = 'translateX(-50%) translateY(-4px)';
       // Hide reverse video if it was playing
       bgHoverRev.pause();
       bgHoverRev.style.transition = 'none';
@@ -699,6 +748,8 @@
     function leaveBgHover() {
       if (!bgHovered) return;
       bgHovered = false;
+      speechBubble.style.opacity = '0';
+      speechBubble.style.transform = 'translateX(-50%) translateY(0)';
       bgHover.onended = null;
       bgHover.pause();
 
@@ -774,8 +825,6 @@
       camera.position.lerpVectors(zoomStart, zoomTarget, t);
     }
 
-    document.getElementById('zoom-in').addEventListener('click', () => { if (paintMode) startZoom(0.4); });
-    document.getElementById('zoom-out').addEventListener('click', () => { if (paintMode) startZoom(-0.4); });
 
     // ============ TOOLBAR ============
     document.querySelectorAll('.spray-can').forEach(can => {
@@ -788,12 +837,35 @@
         panBtn.classList.remove('active');
       });
     });
-    document.getElementById('brush-size').addEventListener('input', (e) => { brushSize = parseInt(e.target.value); });
-    document.getElementById('btn-clear').addEventListener('click', () => {
+    const brushSlider = document.getElementById('brush-size');
+    function updateSliderThumb() {
+      const min = parseFloat(brushSlider.min);
+      const max = parseFloat(brushSlider.max);
+      const val = parseFloat(brushSlider.value);
+      const t = (val - min) / (max - min);
+      const scale = 0.3 + t * 1.1; // 0.3 to 1.4
+      brushSlider.style.setProperty('--thumb-scale', scale);
+    }
+    brushSlider.addEventListener('input', (e) => {
+      brushSize = parseFloat(e.target.value);
+      updateSliderThumb();
+    });
+    updateSliderThumb();
+    const clearBtn = document.getElementById('btn-clear');
+    const clearVideo = clearBtn.querySelector('.clear-video');
+    clearBtn.addEventListener('click', () => {
       overlayPlanes.forEach(p => {
         p.ctx.clearRect(0, 0, p.size, p.size);
         p.tex.needsUpdate = true;
       });
+    });
+    clearBtn.addEventListener('mouseenter', () => {
+      clearVideo.currentTime = 0;
+      clearVideo.play();
+    });
+    clearBtn.addEventListener('mouseleave', () => {
+      clearVideo.pause();
+      clearVideo.currentTime = 0;
     });
 
     // ============ RESIZE ============
