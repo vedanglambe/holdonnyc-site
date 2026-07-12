@@ -17,22 +17,31 @@
     body {
       background: #0e0e0e; overflow: hidden; font-family: sans-serif;
     }
-    #bg-video {
-      position: fixed; top: 45%; right: 0;
-      transform: translateY(-50%);
-      height: 144vh;
+    #bg-video-wrap {
+      position: fixed; top: 50%; right: -100px;
+      transform: translateY(-45%);
+      height: 72vh;
       z-index: 1;
-      opacity: 0.85;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: pointer;
+      aspect-ratio: 900 / 1000;
+      transform-origin: center center;
+      transition: transform 0.3s ease;
     }
-    body::after {
-      content: '';
-      position: fixed; bottom: 0; left: -10%; right: -10%;
-      height: 35%;
-      background: radial-gradient(ellipse 80% 80% at 50% 100%, rgba(30, 60, 120, 0.5) 0%, rgba(20, 45, 90, 0.25) 30%, transparent 55%);
-      pointer-events: none; z-index: 0;
+    #bg-video-wrap video {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      transition: opacity 0.3s ease;
+    }
+    #bg-video {
+      opacity: 0.7;
+    }
+    #bg-video-hover, #bg-video-hover-rev {
+      opacity: 0;
     }
     canvas { display: block; position: relative; z-index: 2; pointer-events: none; }
+
 
     #game-iframe {
       position: fixed; border: none; z-index: 3;
@@ -62,14 +71,14 @@
 
     .tool-btn {
       width: 90px; height: 200px; overflow: hidden;
-      cursor: pointer; transform: translateY(90px);
+      cursor: pointer; transform: translateY(40px);
       transition: transform 0.3s ease;
-      margin: 0 -16px;
+      margin: 0 10px 0 -16px;
       display: flex; align-items: center; justify-content: center;
       border: none; background: none;
     }
     .tool-btn img { width: 80px; height: 80px; pointer-events: none; }
-    .tool-btn:hover { transform: translateY(40px); }
+    .tool-btn:hover { transform: translateY(40px); animation: handShake 0.8s ease; }
     .tool-btn.active { transform: translateY(30px); }
     .spray-can:hover { transform: translateY(40px); animation: canShake 0.4s ease; }
     .spray-can.selected { transform: translateY(30px); }
@@ -77,6 +86,10 @@
     @keyframes canShake {
       0%, 100% { rotate: 0deg; } 20% { rotate: -5deg; }
       40% { rotate: 5deg; } 60% { rotate: -3deg; } 80% { rotate: 3deg; }
+    }
+    @keyframes handShake {
+      0%, 100% { rotate: 0deg; } 25% { rotate: -3deg; }
+      50% { rotate: 3deg; } 75% { rotate: -2deg; }
     }
 
     .toolbar-controls {
@@ -151,7 +164,11 @@
 </head>
 <body>
 
-  <video id="bg-video" src="bg-dance.webm" autoplay muted loop playsinline></video>
+  <div id="bg-video-wrap">
+    <video id="bg-video" src="bg-dance.webm" autoplay muted loop playsinline></video>
+    <video id="bg-video-hover" src="bg-dance-hover.webm" muted playsinline preload="auto"></video>
+    <video id="bg-video-hover-rev" src="bg-dance-hover-reverse.webm" muted playsinline preload="auto"></video>
+  </div>
   <div id="loading">Loading cabinet...</div>
 
   <iframe id="game-iframe"
@@ -221,6 +238,7 @@
     fill.position.set(-3, 2, 3);
     scene.add(fill);
 
+
     // ============ LOAD CABINET GLB ============
     const cabinet = new THREE.Group();
     cabinet.position.z = -2.0;
@@ -242,6 +260,7 @@
 
       cabinet.add(model);
       cabinetLoaded = true;
+
 
       // Collect all meshes for spray paint raycasting
       model.traverse(c => {
@@ -635,6 +654,91 @@
     });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'p' || e.key === 'P') paintMode ? enterPlayMode() : enterPaintMode();
+    });
+
+    // ============ BG VIDEO HOVER ============
+    const bgWrap = document.getElementById('bg-video-wrap');
+    const bgDefault = document.getElementById('bg-video');
+    const bgHover = document.getElementById('bg-video-hover');
+
+    let bgHovered = false;
+    let hoverVideoEnded = false;
+    const bgHoverRev = document.getElementById('bg-video-hover-rev');
+
+    function enterBgHover() {
+      if (bgHovered) return;
+      bgHovered = true;
+      hoverVideoEnded = false;
+      // Hide reverse video if it was playing
+      bgHoverRev.pause();
+      bgHoverRev.style.transition = 'none';
+      bgHoverRev.style.opacity = '0';
+
+      bgDefault.style.opacity = '0';
+      bgHover.style.transition = 'opacity 0.15s ease';
+      bgHover.style.opacity = '0.7';
+      bgHover.currentTime = 0;
+      bgHover.play();
+
+      // Scale the whole group
+      setTimeout(() => {
+        bgWrap.style.transform = 'translateY(-45%) scale(1.1)';
+      }, 300);
+
+      bgHover.onended = () => {
+        if (!bgHovered) return;
+        hoverVideoEnded = true;
+        // Instant swap to default, group stays at 110%
+        bgHover.style.transition = 'none';
+        bgHover.style.opacity = '0';
+        bgDefault.style.transition = 'none';
+        bgDefault.style.opacity = '0.7';
+      };
+    }
+
+    function leaveBgHover() {
+      if (!bgHovered) return;
+      bgHovered = false;
+      bgHover.onended = null;
+      bgHover.pause();
+
+      // Hide whatever is currently showing
+      bgHover.style.transition = 'none';
+      bgHover.style.opacity = '0';
+      bgDefault.style.transition = 'none';
+      bgDefault.style.opacity = '0';
+
+      // Show reverse video and play it
+      bgHoverRev.style.transition = 'none';
+      bgHoverRev.style.opacity = '0.7';
+      bgHoverRev.currentTime = 0;
+      bgHoverRev.play();
+
+      // Shrink the whole group back to 100%
+      bgWrap.style.transform = 'translateY(-45%) scale(1)';
+
+      // When reverse video ends, swap to default
+      bgHoverRev.onended = () => {
+        bgHoverRev.style.transition = 'none';
+        bgHoverRev.style.opacity = '0';
+        bgDefault.style.transition = 'none';
+        bgDefault.style.opacity = '0.7';
+      };
+    }
+
+    bgWrap.addEventListener('mousemove', (e) => {
+      const rect = bgWrap.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const padX = rect.width * (250 / 900); // 250px of 900px video width
+      if (x > padX && x < rect.width - padX) {
+        enterBgHover();
+      } else {
+        leaveBgHover();
+      }
+    });
+
+    bgWrap.addEventListener('mouseleave', () => {
+      leaveBgHover();
     });
 
     // ============ CAMERA ANIMATION ============
