@@ -171,6 +171,40 @@
     }
     #paint-hint.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+    #drag-hint {
+      position: fixed; bottom: 40px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 25; color: rgba(255,255,255,0.6); font-size: 13px;
+      letter-spacing: 1px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    #drag-hint.visible { opacity: 1; }
+
+    #tag-btn {
+      position: fixed; bottom: 20px; left: 20px;
+      z-index: 25; cursor: pointer;
+      background: none; border: 2px solid rgba(255,255,255,0.4);
+      color: #fff; font-family: 'Courier New', monospace;
+      font-size: 13px; font-weight: bold; letter-spacing: 2px;
+      padding: 10px 22px;
+      border-radius: 4px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.2s ease, background 0.2s ease;
+      pointer-events: none;
+    }
+    #tag-btn.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #tag-btn:hover {
+      border-color: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.1);
+    }
+
     #play-btn {
       position: fixed; bottom: 20px; right: 20px;
       z-index: 25; cursor: pointer;
@@ -226,6 +260,8 @@
   <div class="rotate-zone" id="rotate-left"></div>
   <div class="rotate-zone" id="rotate-right"></div>
   <div id="paint-hint">Click left/right to rotate · Spray paint on the cabinet · Scroll to zoom</div>
+  <div id="drag-hint">drag to rotate</div>
+  <button id="tag-btn">TAG IT</button>
   <div id="play-btn">
     <img src="back-to-game.png" alt="Back to Game">
     <video src="back-to-game.webm" muted loop playsinline preload="auto"></video>
@@ -660,12 +696,47 @@
     // Store initial camera position once model loads
     let initialCamZ = 4;
 
+    const dragHint = document.getElementById('drag-hint');
+    const tagBtn = document.getElementById('tag-btn');
+
+    // Show "drag to rotate" hint after 3s if no interaction
+    let userInteracted = false;
+    let dragHintTimer = setTimeout(() => {
+      if (!userInteracted) dragHint.classList.add('visible');
+    }, 3000);
+
+    // Hide drag hint on first interaction
+    function onFirstInteraction() {
+      if (userInteracted) return;
+      userInteracted = true;
+      clearTimeout(dragHintTimer);
+      dragHint.classList.remove('visible');
+    }
+    window.addEventListener('mousedown', onFirstInteraction, { once: true });
+    window.addEventListener('wheel', onFirstInteraction, { once: true });
+
+    // Show "TAG IT" button after 10s
+    setTimeout(() => {
+      if (!paintMode) tagBtn.classList.add('visible');
+    }, 10000);
+
+    // TAG IT button enters paint mode
+    tagBtn.addEventListener('click', () => {
+      tagBtn.classList.remove('visible');
+      enterPaintMode();
+    });
+
     window.addEventListener('message', (e) => {
-      if (e.data === 'gameOver') enterPaintMode();
+      if (e.data === 'gameOver') {
+        tagBtn.classList.remove('visible');
+        enterPaintMode();
+      }
     });
 
     function enterPaintMode() {
       paintMode = true;
+      dragHint.classList.remove('visible');
+      tagBtn.classList.remove('visible');
       renderer.domElement.style.pointerEvents = 'auto';
       gameIframe.style.opacity = '0';
       setTimeout(() => { gameIframe.style.display = 'none'; }, 400);
