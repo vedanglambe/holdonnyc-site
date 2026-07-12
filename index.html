@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hold On, New York!</title>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0e0e0e; overflow: hidden; font-family: sans-serif;
+    }
+    #bg-video {
+      position: fixed; top: 45%; right: 0;
+      transform: translateY(-50%);
+      height: 144vh;
+      z-index: 1;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: fixed; bottom: 0; left: -10%; right: -10%;
+      height: 35%;
+      background: radial-gradient(ellipse 80% 80% at 50% 100%, rgba(30, 60, 120, 0.5) 0%, rgba(20, 45, 90, 0.25) 30%, transparent 55%);
+      pointer-events: none; z-index: 0;
+    }
+    canvas { display: block; position: relative; z-index: 2; pointer-events: none; }
+
+    #game-iframe {
+      position: fixed; border: none; z-index: 3;
+      pointer-events: auto; transition: opacity 0.4s ease;
+    }
+
+    #game-overlay {
+      position: fixed; z-index: 6; cursor: pointer;
+      display: none; background: transparent;
+    }
+
+    #spray-toolbar {
+      position: fixed; bottom: 0; left: 50%;
+      transform: translateX(-50%) translateY(200px);
+      z-index: 20; display: flex; align-items: flex-end;
+      gap: 0; padding: 0;
+      transition: transform 0.5s ease; pointer-events: none;
+    }
+    #spray-toolbar.visible { transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+    .spray-can {
+      width: 90px; height: 200px; overflow: hidden;
+      cursor: pointer; transform: translateY(90px);
+      transition: transform 0.3s ease; margin: 0 -16px;
+    }
+    .spray-can img { width: 190%; height: auto; margin-left: -45%; margin-top: -5%; pointer-events: none; }
+
+    .tool-btn {
+      width: 90px; height: 200px; overflow: hidden;
+      cursor: pointer; transform: translateY(90px);
+      transition: transform 0.3s ease;
+      margin: 0 -16px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: none;
+    }
+    .tool-btn img { width: 80px; height: 80px; pointer-events: none; }
+    .tool-btn:hover { transform: translateY(40px); }
+    .tool-btn.active { transform: translateY(30px); }
+    .spray-can:hover { transform: translateY(40px); animation: canShake 0.4s ease; }
+    .spray-can.selected { transform: translateY(30px); }
+
+    @keyframes canShake {
+      0%, 100% { rotate: 0deg; } 20% { rotate: -5deg; }
+      40% { rotate: 5deg; } 60% { rotate: -3deg; } 80% { rotate: 3deg; }
+    }
+
+    .toolbar-controls {
+      display: flex; align-items: center; gap: 8px;
+      align-self: center; margin-left: 12px; transform: translateY(-20px);
+    }
+    #brush-size { width: 80px; accent-color: #333; }
+    .toolbar-btn {
+      background: rgba(0,0,0,0.7); border: none; color: #fff;
+      font-size: 12px; padding: 6px 14px; border-radius: 20px; cursor: pointer;
+    }
+    .toolbar-btn:hover { background: rgba(0,0,0,0.9); }
+
+    #paint-hint {
+      position: fixed; top: 20px; left: 50%;
+      transform: translateX(-50%) translateY(-60px);
+      z-index: 25; color: #fff; font-size: 14px;
+      background: rgba(0,0,0,0.7); padding: 10px 20px;
+      border-radius: 20px; pointer-events: none;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+      opacity: 0; white-space: nowrap;
+    }
+    #paint-hint.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    #play-btn {
+      position: fixed; bottom: 20px; right: 20px;
+      z-index: 25; cursor: pointer;
+      width: 240px;
+      transform: translateY(200px);
+      transition: transform 0.5s ease;
+      pointer-events: none;
+    }
+    #play-btn.visible {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #play-btn img, #play-btn video {
+      width: 100%; display: block;
+      transition: transform 0.3s ease;
+    }
+    #play-btn video { position: absolute; top: 0; left: 0; opacity: 0; }
+    #play-btn.hovered img { opacity: 0; }
+    #play-btn.hovered video { opacity: 1; }
+    #play-btn.grown img, #play-btn.grown video { transform: scale(1.1); }
+
+    #loading {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff; font-size: 14px; opacity: 0.6; z-index: 30;
+    }
+
+    #zoom-controls {
+      position: fixed; bottom: 20px; left: 20px; z-index: 25;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    #zoom-controls button {
+      width: 36px; height: 36px; border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.12); color: #fff; font-size: 20px;
+      border-radius: 6px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; line-height: 1;
+    }
+    #zoom-controls button:hover { background: rgba(255,255,255,0.25); }
+
+    .rotate-zone {
+      position: fixed; top: 0; width: 100px; height: 100%;
+      z-index: 15; cursor: ew-resize; display: none;
+      user-select: none;
+    }
+    #rotate-left { left: 0; }
+    #rotate-right { right: 0; }
+  </style>
+</head>
+<body>
+
+  <video id="bg-video" src="bg-dance.webm" autoplay muted loop playsinline></video>
+  <div id="loading">Loading cabinet...</div>
+
+  <iframe id="game-iframe"
+    src="https://itch.io/embed-upload/18267116?color=333333"
+    allowfullscreen width="1920" height="920" scrolling="no">
+  </iframe>
+  <div id="game-overlay"></div>
+  <div class="rotate-zone" id="rotate-left"></div>
+  <div class="rotate-zone" id="rotate-right"></div>
+  <div id="paint-hint">Click left/right to rotate · Spray paint on the cabinet · Scroll to zoom</div>
+  <div id="play-btn">
+    <img src="back-to-game.png" alt="Back to Game">
+    <video src="back-to-game.webm" muted loop playsinline preload="auto"></video>
+  </div>
+  <div id="zoom-controls">
+    <button id="zoom-in">+</button>
+    <button id="zoom-out">−</button>
+  </div>
+
+  <div id="spray-toolbar">
+    <div class="tool-btn" id="pan-btn" title="Pan"><img src="pan-hand.png" alt="Pan"></div>
+    <div class="spray-can" data-color="#FF6B35"><img src="spray cans/orange paint can hony.png" alt="Orange"></div>
+    <div class="spray-can" data-color="#FFD23F"><img src="spray cans/yellow paint can hony.png" alt="Yellow"></div>
+    <div class="spray-can" data-color="#EE4266"><img src="spray cans/red paint can hony.png" alt="Red"></div>
+    <div class="spray-can" data-color="#FF69B4"><img src="spray cans/pink paint can hony.png" alt="Pink"></div>
+    <div class="spray-can" data-color="#2ECC40"><img src="spray cans/green paint can hony.png" alt="Green"></div>
+    <div class="spray-can" data-color="#1E90FF"><img src="spray cans/blue paint can hony.png" alt="Blue"></div>
+    <div class="spray-can" data-color="#540D6E"><img src="spray cans/purple paint can hony.png" alt="Purple"></div>
+    <div class="spray-can" data-color="#8B4513"><img src="spray cans/brown paint can hony.png" alt="Brown"></div>
+    <div class="spray-can" data-color="#FFFFFF"><img src="spray cans/white paint can hony.png" alt="White"></div>
+    <div class="spray-can" data-color="#111111"><img src="spray cans/black paint can hony.png" alt="Black"></div>
+    <div class="toolbar-controls">
+      <input type="range" id="brush-size" min="2" max="15" value="6">
+      <button class="toolbar-btn" id="btn-clear">Clear</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    // ============ RENDERER ============
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    document.body.prepend(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    // No background — transparent canvas so iframe shows through
+
+    const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, 0.01, 100);
+    camera.position.set(0, 0.2, 4);
+
+    // ============ LIGHTS ============
+    scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+    // Strong front light so the face isn't in shadow
+    const front = new THREE.DirectionalLight(0xffffff, 1.2);
+    front.position.set(0, 1, 6);
+    scene.add(front);
+    const key = new THREE.DirectionalLight(0xffffff, 0.6);
+    key.position.set(3, 4, 4);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.4);
+    fill.position.set(-3, 2, 3);
+    scene.add(fill);
+
+    // ============ LOAD CABINET GLB ============
+    const cabinet = new THREE.Group();
+    cabinet.position.z = -2.0;
+    cabinet.scale.setScalar(1.5);
+    scene.add(cabinet);
+
+    let cabinetLoaded = false;
+    const paintableMeshes = [];
+
+    const loader = new GLTFLoader();
+    loader.load('cabinet.glb', (gltf) => {
+      const model = gltf.scene;
+
+      // Center and scale
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      model.position.sub(center);
+
+      cabinet.add(model);
+      cabinetLoaded = true;
+
+      // Collect all meshes for spray paint raycasting
+      model.traverse(c => {
+        if (c.isMesh) paintableMeshes.push(c);
+      });
+
+
+
+      // Fit camera
+      const maxDim = Math.max(size.x, size.y, size.z);
+      camera.position.set(0, 0, maxDim * 1.694);
+      initialCamZ = maxDim * 1.694;
+
+      document.getElementById('loading').style.display = 'none';
+
+      // Create transparent overlay planes for spray painting
+      // Pass model-local size (before cabinet scale) so planes are positioned correctly
+      createOverlayPlanes(size);
+
+      // Position iframe after model loads
+      requestAnimationFrame(updateIframePosition);
+    }, (progress) => {
+      if (progress.total) {
+        const pct = Math.round(progress.loaded / progress.total * 100);
+        document.getElementById('loading').textContent = `Loading cabinet... ${pct}%`;
+      }
+    }, (err) => {
+      console.error(err);
+      document.getElementById('loading').textContent = 'Failed to load cabinet';
+    });
+
+    // ============ IFRAME POSITIONING ============
+    // These define where the screen opening is on the cabinet.
+    // Adjust these world-space coords to match your GLB's screen hole.
+    const SCREEN_TL = new THREE.Vector3(-0.7678, 0.4445, 0.5);
+    const SCREEN_BR = new THREE.Vector3(0.7678, -0.3397, 0.5);
+
+    function updateIframePosition() {
+      if (!cabinetLoaded) return;
+      if (paintMode) return;
+
+      // Project screen corners in world space (independent of cabinet position)
+      const tl = SCREEN_TL.clone().project(camera);
+      const br = SCREEN_BR.clone().project(camera);
+
+      const left = (tl.x + 1) / 2 * innerWidth;
+      const top = (-tl.y + 1) / 2 * innerHeight;
+      const right = (br.x + 1) / 2 * innerWidth;
+      const bottom = (-br.y + 1) / 2 * innerHeight;
+
+      const iframe = document.getElementById('game-iframe');
+      const targetW = right - left;
+      const targetH = bottom - top;
+
+      // Iframe renders at native 1920x860, then scale to fit the screen opening
+      const scaleX = targetW / 1920;
+      const scaleY = targetH / 860;
+      const scale = Math.min(scaleX, scaleY);
+
+      iframe.style.width = '1920px';
+      iframe.style.height = '920px';
+      iframe.style.transformOrigin = '0 0';
+      iframe.style.transform = `scale(${scale})`;
+      iframe.style.clipPath = `inset(15px 4px 90px 4px)`;
+      // Offsets scaled relative to projected size so they stay locked at any resolution
+      const refScale = targetW / 700; // normalized to reference screen width
+      iframe.style.left = left + (targetW - 1920 * scale) / 2 - 2 * refScale + 'px';
+      iframe.style.top = top + (targetH - 860 * scale) / 2 - 9 * refScale + 'px';
+    }
+
+    // ============ SPRAY PAINT ============
+    const raycaster = new THREE.Raycaster();
+    const mouseNDC = new THREE.Vector2();
+    let isPainting = false;
+    let currentColor = '#FF6B35';
+    let brushSize = 6;
+    let lastUV = null;
+    let paintMode = false;
+
+    function spray(ctx, cx, cy, radius) {
+      const n = Math.floor(radius * 1.5);
+      ctx.fillStyle = currentColor;
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * radius;
+        ctx.globalAlpha = 0.2 + Math.random() * 0.3;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, Math.random() * 2 + 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function getOverlayData(mesh) {
+      return overlayPlanes.find(o => o.mesh === mesh);
+    }
+
+    // Only raycast against overlay planes for painting (much faster)
+    const overlayMeshes = () => overlayPlanes.map(o => o.mesh);
+
+    function tryPaint(e) {
+      if (!isPainting || !paintMode) return;
+      mouseNDC.x = (e.clientX / innerWidth) * 2 - 1;
+      mouseNDC.y = -(e.clientY / innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouseNDC, camera);
+      const hits = raycaster.intersectObjects(overlayMeshes());
+      if (hits.length === 0 || !hits[0].uv) return;
+
+      const hit = hits[0];
+      const p = getOverlayData(hit.object);
+      if (!p) return;
+      const cx = hit.uv.x * p.size;
+      const cy = (1 - hit.uv.y) * p.size;
+      const canvasR = brushSize * (p.size / 800);
+
+      if (lastUV && lastUV.mesh === hit.object) {
+        const dx = cx - lastUV.x, dy = cy - lastUV.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const steps = Math.max(1, Math.floor(dist / (canvasR * 0.8)));
+        for (let i = 0; i < steps; i++) {
+          spray(p.ctx, lastUV.x + dx * (i / steps), lastUV.y + dy * (i / steps), canvasR);
+        }
+      }
+      spray(p.ctx, cx, cy, canvasR);
+      p.tex.needsUpdate = true;
+      lastUV = { x: cx, y: cy, mesh: hit.object };
+    }
+
+    // ============ TRANSPARENT PAINT OVERLAY PLANES ============
+    const overlayPlanes = [];
+
+    function createOverlayPlanes(modelSize) {
+      // After centering, model origin = bounding box center, so ±size/2 = face positions
+      const sx = modelSize.x / 2;
+      const sy = modelSize.y / 2;
+      const sz = modelSize.z / 2;
+
+      // Log so we can see exact values in console
+      console.log('Model size:', { x: modelSize.x.toFixed(3), y: modelSize.y.toFixed(3), z: modelSize.z.toFixed(3) });
+      console.log('Half extents:', { sx: sx.toFixed(3), sy: sy.toFixed(3), sz: sz.toFixed(3) });
+
+      const pad = 0.06;
+
+      // DEBUG: colored planes so we can SEE where they are
+      const debugColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
+
+      const skinPad = 0.01; // just barely off the surface
+      const faces = [
+        // Left side (-X) — shift down-left, extend left+bottom
+        { w: modelSize.z * 0.949, h: modelSize.y * 0.975, pos: [-sx - skinPad, -modelSize.y * 0.03, modelSize.z * 0.01], rot: [0, -Math.PI / 2, 0] },
+        // Right side (+X) — extend bottom+right
+        { w: modelSize.z * 0.935, h: modelSize.y * 0.965, pos: [sx + skinPad, -modelSize.y * 0.04, modelSize.z * 0.0225], rot: [0, Math.PI / 2, 0] },
+      ];
+
+      const RES = 1024;
+      faces.forEach(f => {
+        const canvas = document.createElement('canvas');
+        canvas.width = RES; canvas.height = RES;
+        const ctx = canvas.getContext('2d');
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex, transparent: true, opacity: 1.0,
+          side: THREE.DoubleSide, depthWrite: false,
+          polygonOffset: true, polygonOffsetFactor: -1,
+        });
+
+        const geo = new THREE.PlaneGeometry(f.w, f.h);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(...f.pos);
+        mesh.rotation.set(...f.rot);
+
+        cabinet.children[0].add(mesh);
+        paintableMeshes.push(mesh);
+        overlayPlanes.push({ mesh, canvas, ctx, tex, size: RES });
+      });
+    }
+
+    // ============ ROTATION (DRAG) ============
+    let targetRotY = 0;
+    let isDragging = false;
+    let dragStartX = 0, dragStartRotY = 0;
+    const SNAP_ANGLES = [-Math.PI / 2, 0, Math.PI / 2];
+
+    function snapToNearest90(angle) {
+      let best = SNAP_ANGLES[0], bestDist = Infinity;
+      for (const a of SNAP_ANGLES) {
+        const d = Math.abs(angle - a);
+        if (d < bestDist) { bestDist = d; best = a; }
+      }
+      return best;
+    }
+
+    // Pan mode toggle
+    let panMode = false;
+    const panBtn = document.getElementById('pan-btn');
+    panBtn.addEventListener('click', () => {
+      panMode = !panMode;
+      panBtn.classList.toggle('active', panMode);
+      // Deselect spray cans when pan is active
+      if (panMode) {
+        document.querySelectorAll('.spray-can').forEach(c => c.classList.remove('selected'));
+        renderer.domElement.style.cursor = 'url(cursor-hand.png) 16 16, grab';
+      } else {
+        renderer.domElement.style.cursor = 'crosshair';
+      }
+    });
+
+    // Drag zones on edges — drag to rotate
+    const rotateLeftEl = document.getElementById('rotate-left');
+    const rotateRightEl = document.getElementById('rotate-right');
+
+    [rotateLeftEl, rotateRightEl].forEach(el => {
+      el.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartRotY = cabinet.rotation.y;
+        el.setPointerCapture(e.pointerId);
+      });
+      el.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - dragStartX;
+        cabinet.rotation.y = Math.max(-Math.PI / 2, Math.min(Math.PI / 2,
+          dragStartRotY + dx * 0.005
+        ));
+      });
+      el.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        targetRotY = snapToNearest90(cabinet.rotation.y);
+        el.releasePointerCapture(e.pointerId);
+      });
+    });
+
+    // Also allow drag-to-rotate on empty space (not on overlay planes)
+    let canvasDragging = false;
+
+    // Left click — paint, pan, or drag-rotate depending on mode
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      if (!paintMode || e.button !== 0) return;
+
+      if (panMode) {
+        // Pan mode: left-click pans
+        isPanning = true;
+        panStartX = e.clientX;
+        panStartY = e.clientY;
+        camStartX = camera.position.x;
+        camStartY = camera.position.y;
+        renderer.domElement.style.cursor = 'url(cursor-fist.png) 16 16, grabbing';
+        return;
+      }
+
+      mouseNDC.x = (e.clientX / innerWidth) * 2 - 1;
+      mouseNDC.y = -(e.clientY / innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouseNDC, camera);
+      const om = overlayMeshes();
+      const hits = raycaster.intersectObjects(om);
+      if (hits.length > 0 && hits[0].uv) {
+        isPainting = true;
+        lastUV = null;
+        tryPaint(e);
+      } else {
+        // Drag to rotate on empty space
+        canvasDragging = true;
+        dragStartX = e.clientX;
+        dragStartRotY = cabinet.rotation.y;
+      }
+    });
+
+    renderer.domElement.addEventListener('pointermove', (e) => {
+      if (isPanning) {
+        const dx = (e.clientX - panStartX) * 0.003;
+        const dy = (e.clientY - panStartY) * 0.003;
+        camera.position.x = camStartX - dx;
+        camera.position.y = camStartY + dy;
+        return;
+      }
+      if (canvasDragging) {
+        const dx = e.clientX - dragStartX;
+        cabinet.rotation.y = Math.max(-Math.PI / 2, Math.min(Math.PI / 2,
+          dragStartRotY + dx * 0.005
+        ));
+        return;
+      }
+      if (isPainting) { tryPaint(e); return; }
+      if (!paintMode) return;
+      if (panMode) { renderer.domElement.style.cursor = 'url(cursor-hand.png) 16 16, grab'; return; }
+      mouseNDC.x = (e.clientX / innerWidth) * 2 - 1;
+      mouseNDC.y = -(e.clientY / innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouseNDC, camera);
+      const hits = raycaster.intersectObjects(overlayMeshes());
+      renderer.domElement.style.cursor = hits.length > 0 ? 'crosshair' : 'grab';
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (canvasDragging) {
+        canvasDragging = false;
+        targetRotY = snapToNearest90(cabinet.rotation.y);
+      }
+      if (isPanning) {
+        isPanning = false;
+        if (panMode) renderer.domElement.style.cursor = 'url(cursor-hand.png) 16 16, grab';
+      }
+      isPainting = false;
+      lastUV = null;
+    });
+
+    // Scroll to zoom in paint mode
+    renderer.domElement.addEventListener('wheel', (e) => {
+      if (!paintMode) return;
+      e.preventDefault();
+      const zoomAmount = e.deltaY > 0 ? -0.3 : 0.3;
+      const newZ = camera.position.z - zoomAmount;
+      camera.position.z = Math.max(1.5, Math.min(12, newZ));
+    }, { passive: false });
+
+    let isPanning = false, panStartX = 0, panStartY = 0;
+    let camStartX = 0, camStartY = 0;
+
+    renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // ============ GAME STATE ============
+    const gameIframe = document.getElementById('game-iframe');
+    const sprayToolbar = document.getElementById('spray-toolbar');
+    const paintHint = document.getElementById('paint-hint');
+    const playBtn = document.getElementById('play-btn');
+
+    // Store initial camera position once model loads
+    let initialCamZ = 4;
+
+    window.addEventListener('message', (e) => {
+      if (e.data === 'gameOver') enterPaintMode();
+    });
+
+    function enterPaintMode() {
+      paintMode = true;
+      renderer.domElement.style.pointerEvents = 'auto';
+      gameIframe.style.opacity = '0';
+      setTimeout(() => { gameIframe.style.display = 'none'; }, 400);
+      sprayToolbar.classList.add('visible');
+      paintHint.classList.add('visible');
+      playBtn.classList.add('visible');
+      rotateLeftEl.style.display = 'flex';
+      rotateRightEl.style.display = 'flex';
+      setTimeout(() => paintHint.classList.remove('visible'), 5000);
+    }
+
+    function enterPlayMode() {
+      paintMode = false;
+      isPainting = false;
+      isDragging = false;
+      canvasDragging = false;
+      renderer.domElement.style.pointerEvents = 'none';
+      renderer.domElement.style.cursor = 'default';
+      sprayToolbar.classList.remove('visible');
+      paintHint.classList.remove('visible');
+      playBtn.classList.remove('visible');
+      rotateLeftEl.style.display = 'none';
+      rotateRightEl.style.display = 'none';
+
+      // Animate cabinet back to front-facing
+      targetRotY = 0;
+
+      // Animate camera back to initial position (reset pan too)
+      animateCamera(new THREE.Vector3(0, 0, initialCamZ), 1000);
+
+      // Show iframe after cabinet has rotated back (wait for animation)
+      setTimeout(() => {
+        gameIframe.style.display = 'block';
+        requestAnimationFrame(() => {
+          gameIframe.style.opacity = '1';
+          updateIframePosition();
+        });
+      }, 1100);
+    }
+
+    playBtn.addEventListener('click', enterPlayMode);
+    const playVideo = playBtn.querySelector('video');
+    playBtn.addEventListener('mouseenter', () => {
+      playBtn.classList.add('hovered');
+      playBtn.classList.add('grown');
+      playVideo.currentTime = 0;
+      playVideo.play();
+    });
+    playBtn.addEventListener('mouseleave', () => {
+      playBtn.classList.remove('hovered');
+      playBtn.classList.remove('grown');
+      playVideo.pause();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'p' || e.key === 'P') paintMode ? enterPlayMode() : enterPaintMode();
+    });
+
+    // ============ CAMERA ANIMATION ============
+    let camTarget = null, camStart = null, camProgress = 0, camDuration = 1000;
+    function animateCamera(target, duration) {
+      camStart = camera.position.clone(); camTarget = target;
+      camProgress = 0; camDuration = duration;
+    }
+    function updateCameraAnim(dt) {
+      if (!camTarget) return;
+      camProgress += dt / camDuration;
+      if (camProgress >= 1) { camera.position.copy(camTarget); camTarget = null; return; }
+      camera.position.lerpVectors(camStart, camTarget, 1 - Math.pow(1 - camProgress, 3));
+    }
+
+    // ============ ZOOM CONTROLS ============
+    let zoomTarget = null, zoomStart = null, zoomProgress = 0;
+    const ZOOM_DURATION = 400;
+
+    function startZoom(amount) {
+      const dir = new THREE.Vector3(0, 0, -1); // zoom along Z
+      zoomStart = camera.position.clone();
+      zoomTarget = camera.position.clone().addScaledVector(dir, amount);
+      zoomTarget.z = Math.max(1.5, Math.min(12, zoomTarget.z));
+      zoomProgress = 0;
+    }
+
+    function updateZoom(dt) {
+      if (!zoomTarget) return;
+      zoomProgress += dt / ZOOM_DURATION;
+      if (zoomProgress >= 1) { camera.position.copy(zoomTarget); zoomTarget = null; return; }
+      const t = 1 - Math.pow(1 - zoomProgress, 3); // ease-out cubic
+      camera.position.lerpVectors(zoomStart, zoomTarget, t);
+    }
+
+    document.getElementById('zoom-in').addEventListener('click', () => { if (paintMode) startZoom(0.4); });
+    document.getElementById('zoom-out').addEventListener('click', () => { if (paintMode) startZoom(-0.4); });
+
+    // ============ TOOLBAR ============
+    document.querySelectorAll('.spray-can').forEach(can => {
+      can.addEventListener('click', () => {
+        document.querySelectorAll('.spray-can').forEach(c => c.classList.remove('selected'));
+        can.classList.add('selected');
+        currentColor = can.dataset.color;
+        // Exit pan mode when selecting a spray can
+        panMode = false;
+        panBtn.classList.remove('active');
+      });
+    });
+    document.getElementById('brush-size').addEventListener('input', (e) => { brushSize = parseInt(e.target.value); });
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      overlayPlanes.forEach(p => {
+        p.ctx.clearRect(0, 0, p.size, p.size);
+        p.tex.needsUpdate = true;
+      });
+    });
+
+    // ============ RESIZE ============
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // ============ ANIMATE ============
+    let lastTime = performance.now();
+    function animate() {
+      requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = now - lastTime;
+      lastTime = now;
+      const dtSec = dt / 1000;
+
+      updateCameraAnim(dt);
+      updateZoom(dt);
+
+      if (paintMode) {
+        // Smooth snap to target when not dragging
+        if (!isDragging && !canvasDragging) {
+          const diff = targetRotY - cabinet.rotation.y;
+          if (Math.abs(diff) > 0.001) {
+            cabinet.rotation.y += diff * 0.1;
+          } else {
+            cabinet.rotation.y = targetRotY;
+          }
+        }
+      } else {
+        // In play mode, snap back to 0 rotation (no sway)
+        if (cabinetLoaded) {
+          const diff = 0 - cabinet.rotation.y;
+          if (Math.abs(diff) > 0.0005) {
+            cabinet.rotation.y += diff * 0.08;
+          } else {
+            cabinet.rotation.y = 0;
+          }
+        }
+      }
+
+      renderer.render(scene, camera);
+      updateIframePosition();
+    }
+    animate();
+  </script>
+</body>
+</html>
