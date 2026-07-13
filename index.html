@@ -13,6 +13,10 @@
   }
   </script>
   <style>
+    @font-face {
+      font-family: 'Minecraft';
+      src: url('minecraft_font.ttf') format('truetype');
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #0e0e0e; overflow: hidden; font-family: sans-serif;
@@ -37,6 +41,18 @@
     #bg-video {
       opacity: 0.7;
     }
+    #dancer-label {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      font-family: 'Minecraft', monospace;
+      font-size: 14pt;
+      color: #fff;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
     #speech-bubble {
       position: absolute; top: -10px; left: 50%;
       transform: translateX(-50%) translateY(0);
@@ -212,6 +228,7 @@
 
   <div id="bg-video-wrap">
     <div id="speech-bubble"><img src="text-bubble.png" alt=""><span>Hello!</span></div>
+    <div id="dancer-label">instructions</div>
     <video id="bg-video" src="bg-dance.webm" autoplay muted loop playsinline></video>
     <video id="bg-video-hover" src="bg-dance-hover.webm" muted playsinline preload="auto"></video>
     <video id="bg-video-hover-rev" src="bg-dance-hover-reverse.webm" muted playsinline preload="auto"></video>
