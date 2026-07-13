@@ -208,6 +208,27 @@
     #play-btn.hovered video { opacity: 1; }
     #play-btn.grown img, #play-btn.grown video { transform: scale(1.1); }
 
+    #explore-btn {
+      position: fixed; bottom: 20px; left: 20px;
+      z-index: 25; cursor: pointer;
+      width: 240px;
+      transform: translateY(200px);
+      transition: transform 0.5s ease;
+      pointer-events: none;
+    }
+    #explore-btn.visible {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    #explore-btn img, #explore-btn video {
+      width: 100%; display: block;
+      transition: transform 0.3s ease;
+    }
+    #explore-btn video { position: absolute; top: 0; left: 0; opacity: 0; }
+    #explore-btn.hovered img { opacity: 0; }
+    #explore-btn.hovered video { opacity: 1; }
+    #explore-btn.grown img, #explore-btn.grown video { transform: scale(1.1); }
+
     #loading {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
@@ -246,6 +267,10 @@
   <div id="play-btn">
     <img src="back-to-game.png" alt="Back to Game">
     <video src="back-to-game.webm" muted loop playsinline preload="auto"></video>
+  </div>
+  <div id="explore-btn">
+    <img src="explore-game.png" alt="Explore Game">
+    <video src="explore-game.webm" muted loop playsinline preload="auto"></video>
   </div>
 
   <div id="spray-toolbar">
@@ -353,6 +378,8 @@
         // Start loading high-res version in background
         loader.load('cabinet.glb', (hqGltf) => {
           setupModel(hqGltf.scene, true);
+          // Show explore button now that full quality is ready
+          document.getElementById('explore-btn').classList.add('visible');
         });
       } else {
         // Re-collect meshes for raycasting with high-res model
@@ -681,8 +708,11 @@
       if (e.data === 'gameOver') enterPaintMode();
     });
 
+    const exploreBtn = document.getElementById('explore-btn');
+
     function enterPaintMode() {
       paintMode = true;
+      exploreBtn.classList.remove('visible');
       renderer.domElement.style.pointerEvents = 'auto';
       gameIframe.style.opacity = '0';
       setTimeout(() => { gameIframe.style.display = 'none'; }, 400);
@@ -723,7 +753,10 @@
       }, 1100);
     }
 
-    playBtn.addEventListener('click', enterPlayMode);
+    playBtn.addEventListener('click', () => {
+      enterPlayMode();
+      exploreBtn.classList.add('visible');
+    });
     const playVideo = playBtn.querySelector('video');
     playBtn.addEventListener('mouseenter', () => {
       playBtn.classList.add('hovered');
@@ -735,6 +768,21 @@
       playBtn.classList.remove('hovered');
       playBtn.classList.remove('grown');
       playVideo.pause();
+    });
+
+    // Explore Game button
+    exploreBtn.addEventListener('click', enterPaintMode);
+    const exploreVideo = exploreBtn.querySelector('video');
+    exploreBtn.addEventListener('mouseenter', () => {
+      exploreBtn.classList.add('hovered');
+      exploreBtn.classList.add('grown');
+      exploreVideo.currentTime = 0;
+      exploreVideo.play();
+    });
+    exploreBtn.addEventListener('mouseleave', () => {
+      exploreBtn.classList.remove('hovered');
+      exploreBtn.classList.remove('grown');
+      exploreVideo.pause();
     });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'p' || e.key === 'P') paintMode ? enterPlayMode() : enterPaintMode();
