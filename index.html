@@ -989,11 +989,13 @@
       });
     }
 
+    // Store baseline (Firebase-loaded) state so clear only removes current session strokes
+    const baselineData = [];
+
     function loadOverlayPaint() {
       overlayPlanes.forEach((p, i) => {
         const ref = fbStorage.ref('graffiti/overlay_' + i + '.png');
         ref.getDownloadURL().then(url => {
-          // Use fetch to avoid CORS issues with Image crossOrigin
           fetch(url).then(r => r.blob()).then(blob => {
             const burl = URL.createObjectURL(blob);
             const img = new Image();
@@ -1001,12 +1003,15 @@
               p.ctx.drawImage(img, 0, 0);
               p.tex.needsUpdate = true;
               URL.revokeObjectURL(burl);
+              // Save baseline after loading
+              baselineData[i] = p.ctx.getImageData(0, 0, p.size, p.size);
               console.log('Loaded overlay', i, 'from Firebase');
             };
             img.src = burl;
           });
         }).catch(() => {
-          // No saved graffiti yet for this plane
+          // No saved graffiti yet — baseline is empty
+          baselineData[i] = p.ctx.getImageData(0, 0, p.size, p.size);
         });
       });
     }
@@ -1512,8 +1517,13 @@
     const clearBtn = document.getElementById('btn-clear');
     const clearVideo = clearBtn.querySelector('.clear-video');
     clearBtn.addEventListener('click', () => {
-      overlayPlanes.forEach(p => {
-        p.ctx.clearRect(0, 0, p.size, p.size);
+      // Only clear current session strokes — restore to Firebase baseline
+      overlayPlanes.forEach((p, i) => {
+        if (baselineData[i]) {
+          p.ctx.putImageData(baselineData[i], 0, 0);
+        } else {
+          p.ctx.clearRect(0, 0, p.size, p.size);
+        }
         p.tex.needsUpdate = true;
       });
     });
