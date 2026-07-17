@@ -264,6 +264,42 @@
         #0d3d11 93.75%, #0d3d11 100%
       );
     }
+    /* Game Over theme — pink/red */
+    #pause-modal.gameover-theme #pause-modal-wrap::before {
+      background: #bf5a8a;
+    }
+    #pause-modal.gameover-theme #pause-modal-wrap::after {
+      display: none;
+    }
+    #pause-modal.gameover-theme #pause-character-box {
+      display: none;
+    }
+    #pause-modal.gameover-theme #border-trail {
+      display: none;
+    }
+    #pause-modal.gameover-theme #pause-modal-inner {
+      background: linear-gradient(180deg,
+        #7a3a5a 0%, #7a3a5a 6.25%,
+        #783758 6.25%, #783758 12.5%,
+        #743454 12.5%, #743454 18.75%,
+        #703150 18.75%, #703150 25%,
+        #6c2e4c 25%, #6c2e4c 31.25%,
+        #682b48 31.25%, #682b48 37.5%,
+        #642844 37.5%, #642844 43.75%,
+        #602540 43.75%, #602540 50%,
+        #5c223c 50%, #5c223c 56.25%,
+        #581f38 56.25%, #581f38 62.5%,
+        #541c34 62.5%, #541c34 68.75%,
+        #501930 68.75%, #501930 75%,
+        #4c162c 75%, #4c162c 81.25%,
+        #481328 81.25%, #481328 87.5%,
+        #441024 87.5%, #441024 93.75%,
+        #401020 93.75%, #401020 100%
+      );
+    }
+    #pause-modal.gameover-theme #instructions-text {
+      top: 15%;
+    }
     #pause-modal.green-theme #instructions-text {
       top: 5%;
       left: 1%;
@@ -1039,8 +1075,17 @@
     // Store initial camera position once model loads
     let initialCamZ = 4;
 
+    let gameOverPending = false;
     window.addEventListener('message', (e) => {
-      if (e.data === 'gameOver') enterPaintMode();
+      if (e.data === 'gameOver') {
+        gameOverPending = true;
+        activeLines = gameOverLines;
+        positionPauseModal();
+        pauseModal.classList.remove('green-theme');
+        pauseModal.classList.add('gameover-theme');
+        pauseModal.classList.add('visible');
+        typewriteAll();
+      }
     });
 
     const exploreBtn = document.getElementById('explore-btn');
@@ -1307,20 +1352,24 @@
       activeLines = instructionLines;
       positionPauseModal();
       pauseModal.classList.remove('green-theme');
+      pauseModal.classList.remove('gameover-theme');
       pauseModal.classList.add('visible');
-      // Pause the game
       gameIframe.contentWindow.postMessage('pause', '*');
-      gameIframe.blur();
       typewriteAll();
     });
 
     continueBtn.addEventListener('click', () => {
       pauseModal.classList.remove('visible');
-      gameIframe.contentWindow.postMessage('resume', '*');
-      gameIframe.focus();
+      pauseModal.classList.remove('gameover-theme');
       typewriterTimeouts.forEach(t => clearTimeout(t));
       typewriterTimeouts = [];
       instructionsEl.innerHTML = '';
+      if (gameOverPending) {
+        gameOverPending = false;
+        enterPaintMode();
+      } else {
+        gameIframe.contentWindow.postMessage('resume', '*');
+      }
     });
     const continueVideo = continueBtn.querySelector('video');
     continueBtn.addEventListener('mouseenter', () => {
@@ -1355,6 +1404,15 @@
       "",
       "Arcade Fabrication + Music: <a href='https://www.instagram.com/tofu.jack/' target='_blank'>Ian Pelton</a>"
     ];
+    const gameOverLines = [
+      "Game Over!",
+      "",
+      "Nice run! Now it's time to",
+      "leave your mark on the subway.",
+      "",
+      "Grab a spray can and tag",
+      "the cabinet however you like!",
+    ];
     let activeLines = instructionLines; // which content the modal shows
 
     bgWrapLeft.addEventListener('click', () => {
@@ -1364,7 +1422,6 @@
       pauseModal.classList.add('green-theme');
       pauseModal.classList.add('visible');
       gameIframe.contentWindow.postMessage('pause', '*');
-      gameIframe.blur();
       typewriteAll();
     });
 
