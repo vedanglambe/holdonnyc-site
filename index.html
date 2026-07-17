@@ -4,6 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hold On, New York!</title>
+  <script src="https://www.gstatic.com/firebasejs/11.7.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.7.3/firebase-storage-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyBEkwkefKsoUSHrzkgtF8pNVHbJtbJdYfg",
+      authDomain: "holdonnyc.firebaseapp.com",
+      projectId: "holdonnyc",
+      storageBucket: "holdonnyc.firebasestorage.app",
+      messagingSenderId: "28647196400",
+      appId: "1:28647196400:web:4c7c8dee106ac15a132435",
+      measurementId: "G-RQBF7MWJ2N"
+    });
+    const fbStorage = firebase.storage();
+  </script>
   <script type="importmap">
   {
     "imports": {
@@ -22,9 +36,8 @@
       background: #0e0e0e; overflow: hidden; font-family: sans-serif;
     }
     #bg-video-wrap {
-      position: fixed; top: 50%; right: -100px;
-      transform: translateY(-45%);
-      height: 72vh;
+      position: fixed;
+      height: 88vh;
       z-index: 1;
       pointer-events: auto;
       cursor: pointer;
@@ -43,38 +56,245 @@
     }
     #dancer-label {
       position: absolute;
-      top: 66.6%; left: 50%;
+      top: 60%; left: 50%;
       transform: translate(-50%, -50%);
       z-index: 5;
-      font-family: 'Minecraft', monospace;
-      font-size: 12pt;
-      color: #fff;
       pointer-events: none;
-      white-space: nowrap;
+      width: 25%;
+    }
+    #dancer-label img, #dancer-label video {
+      width: 100%;
+      display: block;
+    }
+    #dancer-label video {
+      position: absolute;
+      top: 0; left: 0;
+      opacity: 0;
     }
 
-    #speech-bubble {
-      position: absolute; top: -10px; left: 50%;
-      transform: translateX(-50%) translateY(0);
-      z-index: 5;
-      opacity: 0;
-      transition: opacity 0.15s steps(3), transform 0.15s steps(3);
-      pointer-events: none;
-      width: 160px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    #speech-bubble img {
-      width: 100%; height: auto;
-      image-rendering: pixelated;
-    }
-    #speech-bubble span {
+    #dancer-label-left {
       position: absolute;
-      color: #111;
-      font-family: 'Courier New', monospace;
-      font-size: 13px; font-weight: bold;
-      letter-spacing: 1px;
-      padding-bottom: 10px;
+      top: 30%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      pointer-events: none;
+      width: 25%;
     }
+    #dancer-label-left img, #dancer-label-left video {
+      width: 100%;
+      display: block;
+    }
+    #dancer-label-left video {
+      position: absolute;
+      top: 0; left: 0;
+      opacity: 0;
+    }
+
+    #bg-video-wrap-left {
+      position: fixed;
+      height: 88vh;
+      z-index: 1;
+      pointer-events: auto;
+      cursor: pointer;
+      aspect-ratio: 900 / 1000;
+      transform-origin: center center;
+      transition: transform 0.3s ease;
+    }
+    #bg-video-wrap-left video {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      transition: opacity 0.3s ease;
+    }
+    #bg-video-left {
+      opacity: 0.7;
+    }
+    #bg-video-left-hover {
+      opacity: 0;
+    }
+
+    #pause-modal {
+      position: fixed;
+      z-index: 30;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    #pause-modal.visible {
+      display: flex;
+      pointer-events: auto;
+    }
+    #pause-modal-wrap {
+      position: relative;
+    }
+    /* Border layer behind main box */
+    #pause-modal-wrap::before {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      background: #9b8abf;
+      border-radius: 16px;
+    }
+    /* Border layer behind character — merges with main border */
+    #pause-modal-wrap::after {
+      content: '';
+      position: absolute;
+      top: -30px;
+      left: -30px;
+      width: 130px;
+      height: 130px;
+      background: #9b8abf;
+      border-radius: 12px 12px 0 12px;
+    }
+    #pause-modal-inner {
+      position: relative;
+      width: min(480px, 40vw);
+      aspect-ratio: 4 / 3;
+      background: linear-gradient(180deg,
+        #4a3a7a 0%, #4a3a7a 6.25%,
+        #473778 6.25%, #473778 12.5%,
+        #443474 12.5%, #443474 18.75%,
+        #413170 18.75%, #413170 25%,
+        #3e2e6c 25%, #3e2e6c 31.25%,
+        #3b2b68 31.25%, #3b2b68 37.5%,
+        #382864 37.5%, #382864 43.75%,
+        #352560 43.75%, #352560 50%,
+        #32225c 50%, #32225c 56.25%,
+        #2f1f58 56.25%, #2f1f58 62.5%,
+        #2b1c54 62.5%, #2b1c54 68.75%,
+        #281950 68.75%, #281950 75%,
+        #24164c 75%, #24164c 81.25%,
+        #211348 81.25%, #211348 87.5%,
+        #1d1044 87.5%, #1d1044 93.75%,
+        #1a1040 93.75%, #1a1040 100%
+      );
+      border-radius: 12px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 15%;
+      z-index: 1;
+    }
+    #pause-character-box {
+      position: absolute;
+      top: -25px;
+      left: -25px;
+      width: 25%;
+      z-index: 2;
+    }
+    #pause-character-box img {
+      width: 100%;
+      display: block;
+      border-radius: 8px;
+      border: 5px solid #d0c4e2;
+    }
+    #instructions-text {
+      position: absolute;
+      top: 28%;
+      left: 5%;
+      right: 5%;
+      bottom: 18%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-family: 'Minecraft', monospace;
+      font-size: clamp(10px, 1.1vw, 15px);
+      color: #fff;
+      line-height: 1.8;
+      z-index: 2;
+    }
+    #instructions-text .line {
+      white-space: nowrap;
+      display: block;
+      max-width: 0;
+      overflow: hidden;
+      padding-top: 3px;
+      padding-bottom: 5px;
+      margin-top: -3px;
+      margin-bottom: -5px;
+    }
+    .key-highlight {
+      color: #FFD23F;
+    }
+    #instructions-text .spacer {
+      height: 8px;
+    }
+    .green-highlight { color: #2ECC40; }
+    #instructions-text a {
+      color: #2ECC40;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    #instructions-text a:hover {
+      color: #5FE85F;
+    }
+    /* Green theme for About modal */
+    #pause-modal.green-theme #pause-modal-wrap::before {
+      background: #5a8a5f;
+    }
+    #pause-modal.green-theme #pause-modal-wrap::after {
+      display: none;
+    }
+    #pause-modal.green-theme #pause-character-box {
+      display: none;
+    }
+    #pause-modal.green-theme #border-trail {
+      display: none;
+    }
+    #pause-modal.green-theme #pause-modal-inner {
+      background: linear-gradient(180deg,
+        #3a6a3e 0%, #3a6a3e 6.25%,
+        #37673b 6.25%, #37673b 12.5%,
+        #346438 12.5%, #346438 18.75%,
+        #316135 18.75%, #316135 25%,
+        #2e5e32 25%, #2e5e32 31.25%,
+        #2b5b2f 31.25%, #2b5b2f 37.5%,
+        #28582c 37.5%, #28582c 43.75%,
+        #255529 25%, #255529 50%,
+        #225226 50%, #225226 56.25%,
+        #1f4f23 56.25%, #1f4f23 62.5%,
+        #1c4c20 62.5%, #1c4c20 68.75%,
+        #19491d 68.75%, #19491d 75%,
+        #16461a 75%, #16461a 81.25%,
+        #134317 81.25%, #134317 87.5%,
+        #104014 87.5%, #104014 93.75%,
+        #0d3d11 93.75%, #0d3d11 100%
+      );
+    }
+    #pause-modal.green-theme #instructions-text {
+      top: 5%;
+      left: 1%;
+      right: 1%;
+      bottom: 15%;
+      font-size: clamp(7px, 0.85vw, 12px);
+      line-height: 1.8;
+    }
+    @keyframes typewrite {
+      from { max-width: 0; }
+      to { max-width: 999px; }
+    }
+    #continue-btn {
+      position: absolute;
+      bottom: 5%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      width: 200px;
+      padding: 0;
+    }
+    #continue-btn img, #continue-btn video {
+      width: 100%; display: block;
+      transition: transform 0.3s ease;
+    }
+    #continue-btn video { position: absolute; top: 0; left: 0; opacity: 0; }
+    #continue-btn.hovered img { opacity: 0; }
+    #continue-btn.hovered video { opacity: 1; }
+    #continue-btn.grown img, #continue-btn.grown video { transform: scale(1.1); }
     #bg-video-hover, #bg-video-hover-rev {
       opacity: 0;
     }
@@ -188,9 +408,9 @@
     #paint-hint.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
 
     #play-btn {
-      position: fixed; bottom: 20px; right: 20px;
+      position: fixed; bottom: 10px; right: -40px;
       z-index: 25; cursor: pointer;
-      width: 240px;
+      width: 288px;
       transform: translateY(200px);
       transition: transform 0.5s ease;
       pointer-events: none;
@@ -209,9 +429,9 @@
     #play-btn.grown img, #play-btn.grown video { transform: scale(1.1); }
 
     #explore-btn {
-      position: fixed; bottom: 20px; left: 20px;
+      position: fixed; bottom: 10px; left: -40px;
       z-index: 25; cursor: pointer;
-      width: 240px;
+      width: 288px;
       transform: translateY(200px);
       transition: transform 0.5s ease;
       pointer-events: none;
@@ -243,17 +463,67 @@
     }
     #rotate-left { left: 0; }
     #rotate-right { right: 0; }
+
+    /* Pixel trail tracing inside the border */
+    #border-trail {
+      position: absolute;
+      top: -40px;
+      left: -40px;
+      width: 535px;
+      height: 415px;
+      z-index: 3;
+      pointer-events: none;
+      overflow: visible;
+    }
+    #border-trail .trail-dark {
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 5;
+      stroke-dasharray: 60 940;
+      animation: traceLoop 10s steps(120) infinite;
+    }
+    #border-trail .trail-mid {
+      fill: none;
+      stroke: #e0d6f0;
+      stroke-width: 5;
+      stroke-dasharray: 40 960;
+      animation: traceLoop 10s steps(120) infinite;
+    }
+    #border-trail .trail-light {
+      fill: none;
+      stroke: #b8aad0;
+      stroke-width: 5;
+      stroke-dasharray: 25 975;
+      animation: traceLoop 10s steps(120) infinite;
+    }
+    @keyframes traceLoop {
+      from { stroke-dashoffset: 1000; }
+      to { stroke-dashoffset: 0; }
+    }
+
   </style>
 </head>
 <body>
 
   <div id="bg-video-wrap">
-    <div id="speech-bubble"><img src="text-bubble.png" alt=""><span>Hello!</span></div>
-    <div id="dancer-label">instructions</div>
+    <div id="dancer-label">
+      <img src="instructions-label.png" alt="Instructions">
+      <video src="instructions-label.webm" muted loop playsinline preload="auto"></video>
+    </div>
     <video id="bg-video" src="bg-dance.webm" autoplay muted loop playsinline></video>
     <video id="bg-video-hover" src="bg-dance-hover.webm" muted playsinline preload="auto"></video>
     <video id="bg-video-hover-rev" src="bg-dance-hover-reverse.webm" muted playsinline preload="auto"></video>
   </div>
+
+  <div id="bg-video-wrap-left">
+    <div id="dancer-label-left">
+      <img src="about-label.png" alt="About">
+      <video src="about-label.webm" muted loop playsinline preload="auto"></video>
+    </div>
+    <video id="bg-video-left" src="bg-dance-left.webm" autoplay muted loop playsinline></video>
+    <video id="bg-video-left-hover" src="bg-dance-left-hover.webm" muted playsinline preload="auto"></video>
+  </div>
+
   <div id="loading">Loading cabinet...</div>
 
   <iframe id="game-iframe"
@@ -261,6 +531,25 @@
     allowfullscreen width="1920" height="920" scrolling="no">
   </iframe>
   <div id="game-overlay"></div>
+  <div id="pause-modal">
+    <div id="pause-modal-wrap">
+      <div id="pause-character-box">
+        <img src="instructions-character.png" alt="">
+      </div>
+      <svg id="border-trail" viewBox="0 0 535 415" preserveAspectRatio="none">
+        <path class="trail-dark" pathLength="1000" d="M 17,22 L 17,17 L 4,17 L 17,17 L 17,4 L 17,17 L 30,17 L 17,17 L 17,30 L 17,17 L 22,12.5 L 127,12.5 Q 137,12.5 137,22 L 137,37.5 L 512,37.5 Q 522,37.5 522,47.5 L 522,392 Q 522,402 512,402 L 47.5,402 Q 37.5,402 37.5,392 L 37.5,137 L 22,137 Q 12.5,137 12.5,127 L 12.5,22 Z" />
+        <path class="trail-mid" pathLength="1000" d="M 17,22 L 17,17 L 4,17 L 17,17 L 17,4 L 17,17 L 30,17 L 17,17 L 17,30 L 17,17 L 22,12.5 L 127,12.5 Q 137,12.5 137,22 L 137,37.5 L 512,37.5 Q 522,37.5 522,47.5 L 522,392 Q 522,402 512,402 L 47.5,402 Q 37.5,402 37.5,392 L 37.5,137 L 22,137 Q 12.5,137 12.5,127 L 12.5,22 Z" />
+        <path class="trail-light" pathLength="1000" d="M 17,22 L 17,17 L 4,17 L 17,17 L 17,4 L 17,17 L 30,17 L 17,17 L 17,30 L 17,17 L 22,12.5 L 127,12.5 Q 137,12.5 137,22 L 137,37.5 L 512,37.5 Q 522,37.5 522,47.5 L 522,392 Q 522,402 512,402 L 47.5,402 Q 37.5,402 37.5,392 L 37.5,137 L 22,137 Q 12.5,137 12.5,127 L 12.5,22 Z" />
+      </svg>
+      <div id="pause-modal-inner">
+        <div id="instructions-text"></div>
+        <div id="continue-btn">
+          <img src="continue-btn.png" alt="Continue">
+          <video src="continue-btn.webm" muted loop playsinline preload="auto"></video>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="rotate-zone" id="rotate-left"></div>
   <div class="rotate-zone" id="rotate-right"></div>
   <div id="paint-hint">Click left/right to rotate · Spray paint on the cabinet · Scroll to zoom</div>
@@ -330,8 +619,8 @@
 
     // ============ LOAD CABINET GLB ============
     const cabinet = new THREE.Group();
-    cabinet.position.set(0, -0.55, -2.0);
-    cabinet.scale.setScalar(1.685);
+    cabinet.position.set(0, -0.01, -2.0);
+    cabinet.scale.setScalar(1.618);
     scene.add(cabinet);
 
     let cabinetLoaded = false;
@@ -373,6 +662,7 @@
 
         document.getElementById('loading').style.display = 'none';
         createOverlayPlanes(size);
+        loadOverlayPaint();
         requestAnimationFrame(updateIframePosition);
 
         // Start loading high-res version in background
@@ -387,6 +677,10 @@
         cabinet.traverse(c => {
           if (c.isMesh) paintableMeshes.push(c);
         });
+        // Recreate overlay planes on the new model
+        overlayPlanes.length = 0;
+        createOverlayPlanes(modelSize);
+        loadOverlayPaint();
       }
     }
 
@@ -677,9 +971,39 @@
         isPanning = false;
         if (panMode) renderer.domElement.style.cursor = 'url(cursor-hand.png) 16 16, grab';
       }
+      if (isPainting) saveOverlayPaint();
       isPainting = false;
       lastUV = null;
     });
+
+    function saveOverlayPaint() {
+      overlayPlanes.forEach((p, i) => {
+        p.canvas.toBlob((blob) => {
+          if (!blob) return;
+          const ref = fbStorage.ref('graffiti/overlay_' + i + '.png');
+          ref.put(blob).then(() => {
+            console.log('Saved overlay', i, 'to Firebase');
+          }).catch(err => console.warn('Firebase save failed:', err));
+        }, 'image/png');
+      });
+    }
+
+    function loadOverlayPaint() {
+      overlayPlanes.forEach((p, i) => {
+        const ref = fbStorage.ref('graffiti/overlay_' + i + '.png');
+        ref.getDownloadURL().then(url => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            p.ctx.drawImage(img, 0, 0);
+            p.tex.needsUpdate = true;
+          };
+          img.src = url;
+        }).catch(() => {
+          // No saved graffiti yet for this plane
+        });
+      });
+    }
 
     // Scroll to zoom in paint mode
     renderer.domElement.addEventListener('wheel', (e) => {
@@ -790,20 +1114,258 @@
 
     // ============ BG VIDEO HOVER ============
     const bgWrap = document.getElementById('bg-video-wrap');
+
+    // Align dancer centered above "Back to Game" button
+    function alignDancerWithBtn() {
+      // Button is 288px wide, right: -40px → its center from right edge = -40 + 144 = 104px
+      const btnCenterFromRight = -40 + 288 / 2; // 104px from right
+      const btnCenterX = window.innerWidth - btnCenterFromRight;
+      const wrapW = bgWrap.offsetWidth;
+      const wrapH = bgWrap.offsetHeight;
+      // bottom of dancer sits at button top (bottom: 10px + button height)
+      const btnBottom = 10; // button's CSS bottom
+      bgWrap.style.left = (btnCenterX - wrapW / 2) + 'px';
+      bgWrap.style.bottom = btnBottom + 'px';
+    }
+    alignDancerWithBtn();
+    window.addEventListener('resize', () => { alignDancerWithBtn(); alignLeftDancerWithBtn(); });
+
+    // ============ LEFT DANCER ============
+    const bgWrapLeft = document.getElementById('bg-video-wrap-left');
+    const bgDefaultLeft = document.getElementById('bg-video-left');
+    const bgHoverLeft = document.getElementById('bg-video-left-hover');
+    let bgHoveredLeft = false;
+
+    function alignLeftDancerWithBtn() {
+      // Explore button is 288px wide, left: -40px → center from left = -40 + 144 = 104px
+      const btnCenterX = -40 + 288 / 2; // 104px from left
+      const wrapW = bgWrapLeft.offsetWidth;
+      bgWrapLeft.style.left = (btnCenterX - wrapW / 2) + 'px';
+      bgWrapLeft.style.bottom = '10px';
+    }
+    alignLeftDancerWithBtn();
+
+    const aboutLabel = document.querySelector('#dancer-label-left');
+    const aboutLabelImg = aboutLabel.querySelector('img');
+    const aboutLabelVideo = aboutLabel.querySelector('video');
+
+    function enterLeftHover() {
+      if (bgHoveredLeft) return;
+      bgHoveredLeft = true;
+      aboutLabelImg.style.opacity = '0';
+      aboutLabelVideo.style.opacity = '1';
+      aboutLabelVideo.currentTime = 0;
+      aboutLabelVideo.play();
+      bgDefaultLeft.style.opacity = '0';
+      bgHoverLeft.style.transition = 'opacity 0.15s ease';
+      bgHoverLeft.style.opacity = '0.7';
+      bgHoverLeft.currentTime = 0;
+      bgHoverLeft.play();
+      setTimeout(() => {
+        bgWrapLeft.style.transform = 'scale(1.1)';
+      }, 300);
+      bgHoverLeft.onended = () => {
+        if (!bgHoveredLeft) return;
+        bgHoverLeft.style.transition = 'none';
+        bgHoverLeft.style.opacity = '0';
+        bgDefaultLeft.style.transition = 'none';
+        bgDefaultLeft.style.opacity = '0.7';
+      };
+    }
+
+    function leaveLeftHover() {
+      if (!bgHoveredLeft) return;
+      bgHoveredLeft = false;
+      aboutLabelVideo.pause();
+      aboutLabelVideo.style.opacity = '0';
+      aboutLabelImg.style.opacity = '1';
+      bgHoverLeft.onended = null;
+      bgHoverLeft.pause();
+      bgHoverLeft.style.transition = 'none';
+      bgHoverLeft.style.opacity = '0';
+      bgDefaultLeft.style.transition = 'opacity 0.3s ease';
+      bgDefaultLeft.style.opacity = '0.7';
+      bgWrapLeft.style.transform = 'scale(1)';
+    }
+
+    bgWrapLeft.addEventListener('mousemove', (e) => {
+      const rect = bgWrapLeft.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const padX = rect.width * (250 / 900);
+      if (x > padX && x < rect.width - padX) {
+        enterLeftHover();
+      } else {
+        leaveLeftHover();
+      }
+    });
+
+    bgWrapLeft.addEventListener('mouseleave', () => {
+      leaveLeftHover();
+    });
+
     const bgDefault = document.getElementById('bg-video');
     const bgHover = document.getElementById('bg-video-hover');
 
     let bgHovered = false;
     let hoverVideoEnded = false;
     const bgHoverRev = document.getElementById('bg-video-hover-rev');
-    const speechBubble = document.getElementById('speech-bubble');
+
+    // ============ PAUSE MODAL ============
+    const pauseModal = document.getElementById('pause-modal');
+    const continueBtn = document.getElementById('continue-btn');
+
+    function positionPauseModal() {
+      const iframe = document.getElementById('game-iframe');
+      const rect = iframe.getBoundingClientRect();
+      const scale = parseFloat(iframe.style.transform.match(/scale\(([\d.]+)\)/)?.[1] || 1);
+      const visW = 1920 * scale;
+      const visH = 920 * scale;
+      const l = parseFloat(iframe.style.left);
+      const t = parseFloat(iframe.style.top);
+      pauseModal.style.left = l + 'px';
+      pauseModal.style.top = t + 'px';
+      pauseModal.style.width = visW + 'px';
+      pauseModal.style.height = visH + 'px';
+    }
+
+    // Typewriter instructions
+    const instructionLines = [
+      "This is a co-op game! Work together",
+      "to move the poles and dodge subway dancers",
+      "",
+      "Player 1: <k>W</k> <k>S</k> <k>A</k> <k>D</k>",
+      "Player 2: <k>Up</k> <k>Down</k> <k>Left</k> <k>Right</k>",
+      "",
+      "In dance mode follow the directions",
+      "on screen to score bonus points"
+    ];
+    let typewriterTimeouts = [];
+    const instructionsEl = document.getElementById('instructions-text');
+
+    function typewriteAll() {
+      instructionsEl.innerHTML = '';
+      typewriterTimeouts.forEach(t => clearTimeout(t));
+      typewriterTimeouts = [];
+
+      let totalDelay = 0;
+      const charSpeed = 40;
+      const groupDelay = 600;
+      const sameGroupDelay = 100;
+
+      activeLines.forEach((text, idx) => {
+        if (text === '') {
+          const spacer = document.createElement('div');
+          spacer.className = 'spacer';
+          instructionsEl.appendChild(spacer);
+          totalDelay += groupDelay;
+          return;
+        }
+        const isFirstInGroup = idx === 0 || activeLines[idx - 1] === '';
+        const lineEl = document.createElement('div');
+        lineEl.className = 'line';
+        let html = text.replace(/<k>(.*?)<\/k>/g, '<span class="key-highlight">$1</span>');
+        html = html.replace(/<g>(.*?)<\/g>/g, '<span class="green-highlight">$1</span>');
+        lineEl.innerHTML = html;
+        instructionsEl.appendChild(lineEl);
+
+        const plainText = text.replace(/<k>|<\/k>|<g>|<\/g>|<a[^>]*>|<\/a>/g, '');
+        const startDelay = totalDelay;
+        const duration = plainText.length * charSpeed;
+
+        const t = setTimeout(() => {
+          lineEl.style.animation = `typewrite ${duration}ms steps(${plainText.length}) forwards`;
+        }, startDelay);
+        typewriterTimeouts.push(t);
+
+        // All lines in a group type simultaneously — only add duration after last line in group
+        const nextIsInSameGroup = idx + 1 < activeLines.length && activeLines[idx + 1] !== '';
+        if (!nextIsInSameGroup) {
+          // Last line in group — find longest line duration in this group and add it
+          let maxDur = duration;
+          for (let j = idx - 1; j >= 0 && activeLines[j] !== ''; j--) {
+            const pt = activeLines[j].replace(/<k>|<\/k>|<g>|<\/g>/g, '');
+            maxDur = Math.max(maxDur, pt.length * charSpeed);
+          }
+          totalDelay += maxDur;
+        }
+      });
+    }
+
+    bgWrap.addEventListener('click', () => {
+      if (paintMode) return;
+      activeLines = instructionLines;
+      positionPauseModal();
+      pauseModal.classList.remove('green-theme');
+      pauseModal.classList.add('visible');
+      // Pause the game by blurring the iframe
+      document.getElementById('game-iframe').blur();
+      typewriteAll();
+    });
+
+    continueBtn.addEventListener('click', () => {
+      pauseModal.classList.remove('visible');
+      document.getElementById('game-iframe').focus();
+      typewriterTimeouts.forEach(t => clearTimeout(t));
+      typewriterTimeouts = [];
+      instructionsEl.innerHTML = '';
+    });
+    const continueVideo = continueBtn.querySelector('video');
+    continueBtn.addEventListener('mouseenter', () => {
+      continueBtn.classList.add('hovered');
+      continueBtn.classList.add('grown');
+      continueVideo.currentTime = 0;
+      continueVideo.play();
+    });
+    continueBtn.addEventListener('mouseleave', () => {
+      continueBtn.classList.remove('hovered');
+      continueBtn.classList.remove('grown');
+      continueVideo.pause();
+    });
+
+    // ============ ABOUT — reuses pause modal ============
+    const aboutLines = [
+      "Hold On, New York! is an alt-ctrl analog",
+      "arcade game created for The New Arcade",
+      "class at NYU ITP.",
+      "",
+      "Grab the poles and hold tight as subway",
+      "dancers take over the New York subway.",
+      "",
+      "Credits:",
+      "",
+      "Creative Direction + Animation +",
+      "Unity Game Engineering: <a href='https://vedanglambe.com/' target='_blank'>Vedang Lambe</a>",
+      "",
+      "Unity Game Engineering: <a href='https://lingwuli.cargo.site/' target='_blank'>Lingwu LI</a>",
+      "",
+      "Analog Game Controller Fabrication: <a href='https://yinzhouhuang.com/' target='_blank'>Jerome Huang</a>",
+      "",
+      "Arcade Fabrication + Music: <a href='https://www.instagram.com/tofu.jack/' target='_blank'>Ian Pelton</a>"
+    ];
+    let activeLines = instructionLines; // which content the modal shows
+
+    bgWrapLeft.addEventListener('click', () => {
+      if (paintMode) return;
+      activeLines = aboutLines;
+      positionPauseModal();
+      pauseModal.classList.add('green-theme');
+      pauseModal.classList.add('visible');
+      gameIframe.blur();
+      typewriteAll();
+    });
+
+    const instrLabel = document.querySelector('#dancer-label');
+    const instrLabelImg = instrLabel.querySelector('img');
+    const instrLabelVideo = instrLabel.querySelector('video');
 
     function enterBgHover() {
       if (bgHovered) return;
       bgHovered = true;
+      instrLabelImg.style.opacity = '0';
+      instrLabelVideo.style.opacity = '1';
+      instrLabelVideo.currentTime = 0;
+      instrLabelVideo.play();
       hoverVideoEnded = false;
-      speechBubble.style.opacity = '1';
-      speechBubble.style.transform = 'translateX(-50%) translateY(-4px)';
       // Hide reverse video if it was playing
       bgHoverRev.pause();
       bgHoverRev.style.transition = 'none';
@@ -817,7 +1379,7 @@
 
       // Scale the whole group
       setTimeout(() => {
-        bgWrap.style.transform = 'translateY(-45%) scale(1.1)';
+        bgWrap.style.transform = 'scale(1.1)';
       }, 300);
 
       bgHover.onended = () => {
@@ -834,8 +1396,9 @@
     function leaveBgHover() {
       if (!bgHovered) return;
       bgHovered = false;
-      speechBubble.style.opacity = '0';
-      speechBubble.style.transform = 'translateX(-50%) translateY(0)';
+      instrLabelVideo.pause();
+      instrLabelVideo.style.opacity = '0';
+      instrLabelImg.style.opacity = '1';
       bgHover.onended = null;
       bgHover.pause();
 
@@ -852,7 +1415,7 @@
       bgHoverRev.play();
 
       // Shrink the whole group back to 100%
-      bgWrap.style.transform = 'translateY(-45%) scale(1)';
+      bgWrap.style.transform = 'scale(1)';
 
       // When reverse video ends, swap to default
       bgHoverRev.onended = () => {
