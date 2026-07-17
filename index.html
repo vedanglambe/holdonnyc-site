@@ -993,13 +993,18 @@
       overlayPlanes.forEach((p, i) => {
         const ref = fbStorage.ref('graffiti/overlay_' + i + '.png');
         ref.getDownloadURL().then(url => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            p.ctx.drawImage(img, 0, 0);
-            p.tex.needsUpdate = true;
-          };
-          img.src = url;
+          // Use fetch to avoid CORS issues with Image crossOrigin
+          fetch(url).then(r => r.blob()).then(blob => {
+            const burl = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+              p.ctx.drawImage(img, 0, 0);
+              p.tex.needsUpdate = true;
+              URL.revokeObjectURL(burl);
+              console.log('Loaded overlay', i, 'from Firebase');
+            };
+            img.src = burl;
+          });
         }).catch(() => {
           // No saved graffiti yet for this plane
         });
