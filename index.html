@@ -528,7 +528,8 @@
 
   <iframe id="game-iframe"
     src="https://itch.io/embed-upload/18267116?color=333333"
-    allowfullscreen width="1920" height="920" scrolling="no">
+    allowfullscreen width="1920" height="920" scrolling="no"
+    onload="this.focus()">
   </iframe>
   <div id="game-overlay"></div>
   <div id="pause-modal">
@@ -1297,14 +1298,16 @@
       positionPauseModal();
       pauseModal.classList.remove('green-theme');
       pauseModal.classList.add('visible');
-      // Pause the game by blurring the iframe
-      document.getElementById('game-iframe').blur();
+      // Pause the game
+      gameIframe.contentWindow.postMessage('pause', '*');
+      gameIframe.blur();
       typewriteAll();
     });
 
     continueBtn.addEventListener('click', () => {
       pauseModal.classList.remove('visible');
-      document.getElementById('game-iframe').focus();
+      gameIframe.contentWindow.postMessage('resume', '*');
+      gameIframe.focus();
       typewriterTimeouts.forEach(t => clearTimeout(t));
       typewriterTimeouts = [];
       instructionsEl.innerHTML = '';
@@ -1350,6 +1353,7 @@
       positionPauseModal();
       pauseModal.classList.add('green-theme');
       pauseModal.classList.add('visible');
+      gameIframe.contentWindow.postMessage('pause', '*');
       gameIframe.blur();
       typewriteAll();
     });
