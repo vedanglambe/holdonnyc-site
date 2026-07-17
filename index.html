@@ -264,9 +264,9 @@
         #0d3d11 93.75%, #0d3d11 100%
       );
     }
-    /* Game Over theme — pink/red */
+    /* Game Over theme — blue */
     #pause-modal.gameover-theme #pause-modal-wrap::before {
-      background: #bf5a8a;
+      background: #5a7abf;
     }
     #pause-modal.gameover-theme #pause-modal-wrap::after {
       display: none;
@@ -279,26 +279,32 @@
     }
     #pause-modal.gameover-theme #pause-modal-inner {
       background: linear-gradient(180deg,
-        #7a3a5a 0%, #7a3a5a 6.25%,
-        #783758 6.25%, #783758 12.5%,
-        #743454 12.5%, #743454 18.75%,
-        #703150 18.75%, #703150 25%,
-        #6c2e4c 25%, #6c2e4c 31.25%,
-        #682b48 31.25%, #682b48 37.5%,
-        #642844 37.5%, #642844 43.75%,
-        #602540 43.75%, #602540 50%,
-        #5c223c 50%, #5c223c 56.25%,
-        #581f38 56.25%, #581f38 62.5%,
-        #541c34 62.5%, #541c34 68.75%,
-        #501930 68.75%, #501930 75%,
-        #4c162c 75%, #4c162c 81.25%,
-        #481328 81.25%, #481328 87.5%,
-        #441024 87.5%, #441024 93.75%,
-        #401020 93.75%, #401020 100%
+        #3a5a7a 0%, #3a5a7a 6.25%,
+        #385778 6.25%, #385778 12.5%,
+        #345474 12.5%, #345474 18.75%,
+        #315170 18.75%, #315170 25%,
+        #2e4e6c 25%, #2e4e6c 31.25%,
+        #2b4b68 31.25%, #2b4b68 37.5%,
+        #284864 37.5%, #284864 43.75%,
+        #254560 43.75%, #254560 50%,
+        #22425c 22%, #22425c 56.25%,
+        #1f3f58 56.25%, #1f3f58 62.5%,
+        #1c3c54 62.5%, #1c3c54 68.75%,
+        #193950 68.75%, #193950 75%,
+        #16364c 75%, #16364c 81.25%,
+        #133348 81.25%, #133348 87.5%,
+        #103044 87.5%, #103044 93.75%,
+        #0d2d40 93.75%, #0d2d40 100%
       );
     }
     #pause-modal.gameover-theme #instructions-text {
       top: 15%;
+    }
+    #pause-modal.gameover-theme #instructions-text a {
+      color: #5CB8FF;
+    }
+    #pause-modal.gameover-theme #instructions-text a:hover {
+      color: #8ED0FF;
     }
     #pause-modal.green-theme #instructions-text {
       top: 5%;
@@ -1412,6 +1418,9 @@
       "",
       "Grab a spray can and tag",
       "the cabinet however you like!",
+      "",
+      "Follow us on Instagram to keep",
+      "up with the project <a href='https://www.instagram.com/holdonnyc/' target='_blank'>@holdonnyc</a>",
     ];
     let activeLines = instructionLines; // which content the modal shows
 
