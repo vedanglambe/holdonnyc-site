@@ -1666,6 +1666,7 @@
     <video id="mg-bg" src="dance-loop.mp4" autoplay loop muted playsinline></video>
     <div id="mg-scrim"></div>
     <div id="mg-content">
+      <video id="mg-whoops" src="whoops-loop.mp4" autoplay loop muted playsinline></video>
       <h1>You can&rsquo;t play on mobile</h1>
       <p>Switch to desktop to play. In the meantime, follow the ride on Instagram <a href="https://instagram.com/holdonnyc" target="_blank" rel="noopener">@holdonnyc</a></p>
     </div>
@@ -1674,11 +1675,12 @@
     #mobile-gate { display: none; }
     @media (hover: none) and (pointer: coarse) {
       #mobile-gate { display: block; position: fixed; inset: 0; z-index: 999999; background: #0e0e0e; overflow: hidden; }
-      #mg-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.25); transform-origin: center 40%; }
-      #mg-scrim { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(14,14,14,0.30) 0%, rgba(14,14,14,0.20) 42%, rgba(14,14,14,0.92) 100%); }
-      #mg-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center; padding: 28px 26px 62px; }
-      #mg-content h1 { font-family: 'Minecraft', monospace; font-size: 26px; line-height: 1.2; margin: 0 0 14px; color: #ffe14d; letter-spacing: 0.02em; text-shadow: 0 2px 14px rgba(0,0,0,0.6); }
-      #mg-content p { font-family: 'Minecraft', monospace; font-size: 14px; line-height: 1.65; margin: 0; color: #fff; max-width: 330px; text-shadow: 0 1px 10px rgba(0,0,0,0.7); }
+      #mg-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.15) translateY(20%); transform-origin: center top; }
+      #mg-scrim { position: absolute; inset: 0; background: radial-gradient(130% 85% at center 46%, rgba(14,14,14,0.32) 0%, rgba(14,14,14,0.68) 100%); }
+      #mg-content { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 28px 26px; }
+      #mg-whoops { width: min(78vw, 360px); height: auto; mix-blend-mode: screen; margin-bottom: 6px; pointer-events: none; }
+      #mg-content h1 { font-family: 'Minecraft', monospace; font-size: 26px; line-height: 1.2; margin: 0 0 14px; color: #ffe14d; letter-spacing: 0.02em; text-shadow: 0 2px 16px rgba(0,0,0,0.75); }
+      #mg-content p { font-family: 'Minecraft', monospace; font-size: 14px; line-height: 1.65; margin: 0; color: #fff; max-width: 330px; text-shadow: 0 1px 12px rgba(0,0,0,0.85); }
       #mg-content a { color: #ffe14d; text-decoration: underline; text-underline-offset: 3px; }
     }
   </style>
