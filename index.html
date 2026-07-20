@@ -634,7 +634,7 @@
     // ============ MOBILE GATE ============
     // On phones, skip the entire 3D + Unity experience (no GLB / WebGL / game download).
     // The #mobile-gate overlay handles the mobile view instead.
-    const IS_MOBILE = window.matchMedia('(max-width: 768px)').matches;
+    const IS_MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     const __gameIframe = document.getElementById('game-iframe');
     if (IS_MOBILE) {
       throw new Error('mobile-gate: 3D experience intentionally skipped on mobile');
@@ -1671,7 +1671,7 @@
   </div>
   <style>
     #mobile-gate { display: none; }
-    @media (max-width: 768px) {
+    @media (hover: none) and (pointer: coarse) {
       #mobile-gate {
         display: flex; position: fixed; inset: 0; z-index: 999999;
         background: #0e0e0e; color: #fff;
