@@ -569,7 +569,7 @@
   <div id="loading">Loading cabinet...</div>
 
   <iframe id="game-iframe"
-    src="https://itch.io/embed-upload/18267116?color=333333"
+    data-src="https://itch.io/embed-upload/18267116?color=333333"
     allowfullscreen width="1920" height="920" scrolling="no"
     onload="this.focus()">
   </iframe>
@@ -630,6 +630,18 @@
     import * as THREE from 'three';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+    // ============ MOBILE GATE ============
+    // On phones, skip the entire 3D + Unity experience (no GLB / WebGL / game download).
+    // The #mobile-gate overlay handles the mobile view instead.
+    const IS_MOBILE = window.matchMedia('(max-width: 768px)').matches;
+    const __gameIframe = document.getElementById('game-iframe');
+    if (IS_MOBILE) {
+      throw new Error('mobile-gate: 3D experience intentionally skipped on mobile');
+    } else if (__gameIframe && __gameIframe.dataset.src) {
+      // Desktop: load the Unity game that we deferred in the markup.
+      __gameIframe.src = __gameIframe.dataset.src;
+    }
 
     // ============ RENDERER ============
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -1648,5 +1660,30 @@
     }
     animate();
   </script>
+
+  <!-- Mobile fallback gate: the 3D/game experience is desktop-only -->
+  <div id="mobile-gate">
+    <video src="whoops-loop.mp4" autoplay loop muted playsinline></video>
+    <h1>Can&rsquo;t hold on from a phone.</h1>
+    <p>This one&rsquo;s a desktop ride &mdash; hop on a computer to play.</p>
+    <p class="mg-follow">In the meantime, follow the ride &rarr;</p>
+    <a href="https://instagram.com/holdonnyc" target="_blank" rel="noopener">@holdonnyc</a>
+  </div>
+  <style>
+    #mobile-gate { display: none; }
+    @media (max-width: 768px) {
+      #mobile-gate {
+        display: flex; position: fixed; inset: 0; z-index: 999999;
+        background: #0e0e0e; color: #fff;
+        flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; padding: 28px; gap: 12px;
+      }
+      #mobile-gate video { width: min(90vw, 440px); height: auto; margin-bottom: 4px; }
+      #mobile-gate h1 { font-family: 'Minecraft', monospace; font-size: 22px; line-height: 1.25; margin: 0; color: #ffe14d; letter-spacing: 0.02em; }
+      #mobile-gate p { font-family: 'Minecraft', monospace; font-size: 14px; line-height: 1.6; margin: 0; color: rgba(255,255,255,0.72); max-width: 320px; }
+      #mobile-gate .mg-follow { margin-top: 10px; }
+      #mobile-gate a { font-family: 'Minecraft', monospace; font-size: 17px; color: #ffe14d; text-decoration: underline; text-underline-offset: 3px; }
+    }
+  </style>
 </body>
 </html>
