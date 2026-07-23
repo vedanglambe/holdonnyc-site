@@ -634,7 +634,7 @@
     // ============ MOBILE GATE ============
     // On phones, skip the entire 3D + Unity experience (no GLB / WebGL / game download).
     // The #mobile-gate overlay handles the mobile view instead.
-    const IS_MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    const IS_MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)').matches || window.innerWidth < 1200;
     const __gameIframe = document.getElementById('game-iframe');
     if (IS_MOBILE) {
       throw new Error('mobile-gate: 3D experience intentionally skipped on mobile');
@@ -655,7 +655,16 @@
     const scene = new THREE.Scene();
     // No background — transparent canvas so iframe shows through
 
-    const camera = new THREE.PerspectiveCamera(36, innerWidth / innerHeight, 0.01, 100);
+    // Hold the HORIZONTAL field of view constant across aspect ratios so the
+    // cabinet keeps consistent side margins and the dancers never clip on
+    // narrower (16:10 / smaller) desktop screens. Identical framing at 16:9.
+    const REF_ASPECT = 16 / 9;
+    const HFOV_HALF_TAN = Math.tan((36 * Math.PI / 180) / 2) * REF_ASPECT;
+    function fovForAspect(aspect) {
+      const f = 2 * Math.atan(HFOV_HALF_TAN / aspect) * 180 / Math.PI;
+      return Math.max(20, Math.min(55, f));
+    }
+    const camera = new THREE.PerspectiveCamera(fovForAspect(innerWidth / innerHeight), innerWidth / innerHeight, 0.01, 100);
     camera.position.set(0, 0.2, 4);
 
     // ============ LIGHTS ============
@@ -1617,6 +1626,7 @@
     // ============ RESIZE ============
     window.addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight;
+      camera.fov = fovForAspect(camera.aspect);
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     });
@@ -1674,7 +1684,7 @@
   </div>
   <style>
     #mobile-gate { display: none; }
-    @media (hover: none) and (pointer: coarse) {
+    @media (hover: none) and (pointer: coarse), (max-width: 1199px) {
       #mobile-gate { display: block; position: fixed; inset: 0; z-index: 999999; background: #0e0e0e; overflow: hidden; }
       #mg-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.15) translateY(4%); transform-origin: center top; }
       #mg-scrim { position: absolute; inset: 0; background: radial-gradient(130% 85% at center 46%, rgba(14,14,14,0.32) 0%, rgba(14,14,14,0.68) 100%); }
